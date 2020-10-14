@@ -53,11 +53,14 @@ Numpy:
 * With pip: ```pip3 install numpy```
 * With conda: ```conda install numpy```
 
+Matplotlib (for visualization):
+* With pip: ```pip3 install matplotlib```
+* With conda: ```conda install matplotlib```
+* (Alternatively) under Linux: ```sudo apt-get install python3-matplotlib```
+
 nbconvert (for converting Jupyter notebooks to other formats):
 * With pip: ```pip3 install nbconvert```
 * With conda: ```conda install nbconvert```
-
-[Do we need to install matplotlib if we want to use that in the notebooks?  Or does it come with Jupyter?]
 
 ### Running Jupyter notebook
 In a terminal window run ```jupyter notebook```.  It should automatically open a browser window pointing at the Jupyter application, but if this doesn’t happen you can just browse to the URL that it prints out.  When you are using Jupyter, all the information is stored in the process that is running in this window, so if you close the window or exit the Jupyter server with control-C, you will lose everything unsaved that is stored in the notebook and in any variables that have been defined in the notebook.
