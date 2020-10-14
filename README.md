@@ -105,12 +105,11 @@ For the creative portion of this assignment there are two avenues
 
 * If your native enthusiasm is for making wacky images, then think up a cool image warping effect and implement it.  (Twisting?  Bulging?  Kaleidoscopes?)  Or code up a filter that creates a nifty effect when applied to an image.  (Starbursts? Lens Bokeh?  Motion blur?)  You just need to compute your images using raw NumPy in the same way as in the assignment.
 
-* If your native enthusiasm is for making things that go fast, then figure out how to implement all the functions in the convolution and warping notebooks so that they run much faster than the basic versions.  Try to meet these performance goals:
+* If your native enthusiasm is for making things that go fast, then figure out how to implement all the functions in the convolution and warping notebooks so that they run much faster than the basic versions.  Try to meet these performance goals (where *T* is the time taken by the example box filtering code with r = 7 applied to the full-size test image):
   - 1.6*T* for `convolve_sep(im, gen_gaussian_filter(100, 16.0))` on the full size test image
   - 0.02*T* for `undistort_image(distorted_im, k1, k2, M, 1)` (i.e. with bilinear interpolation)
   - 0.55*T* for the last cell of the Distortion notebook with k = 20 (20 rotation operations with bilinear interpolation)
-  
-where *T* is the time taken by the example box filtering code with r = 7 applied to the full-size test image.
+
 
 
 ## What to hand in
