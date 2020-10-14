@@ -109,6 +109,7 @@ For the creative portion of this assignment there are two avenues
   - 1.6*T* for `convolve_sep(im, gen_gaussian_filter(100, 16.0))` on the full size test image
   - 0.02*T* for `undistort_image(distorted_im, k1, k2, M, 1)` (i.e. with bilinear interpolation)
   - 0.55*T* for the last cell of the Distortion notebook with k = 20 (20 rotation operations with bilinear interpolation)
+  
 where *T* is the time taken by the example box filtering code with r = 7 applied to the full-size test image.
 
 
@@ -119,5 +120,6 @@ We provide a Python module `imaging.py` that contains templates for all the func
 For the creative part, submit a 1-page PDF with either:
  * some images you've computed and an explanation of what they are and what code you wrote to make them.
  * some timing test results and an explanation of how you had to change the code to achieve them.
+ 
 A PDF generated from a Jupyter notebook is one appropriate option for this.
 
