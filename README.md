@@ -125,4 +125,4 @@ For the creative part, submit a 1-page PDF with either:
  * some timing test results and an explanation of how you had to change the code to achieve them.
  
 A PDF generated from a Jupyter notebook is one appropriate option for this.
-
+```jupyter nbconvert --to pdf [some-notebook].ipynb```
