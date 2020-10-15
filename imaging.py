@@ -43,7 +43,7 @@ def color_transform(I, M):
 #   k: The number of units/pixels to be shifted to the left (you can assume k < width of image)
 # Output:
 #   A 2D array of img shifted to the left by k pixels
-# Put black in for sample points that fall out of bounds.
+#  For points that fall out of range on the right side, repeat the rightmost pixel. 
 def shift_image_to_left(img, k):
     new_img = np.zeros(img.shape, np.uint8)
     # A3TODO: Complete this function
@@ -79,6 +79,7 @@ def rotate_image(img, k, interp_mode=0):
 #   img: A distorted image, with coordinates in the distorted space
 #   k1, k2: distortion model coefficients (see explanation above)
 #   M: affine transformation from pixel coordinates to distortion-model coordinates
+#   interp_mode: 0 for nearest neighbor, 1 for bilinear
 # Output:
 #   An undistorted image, with pixels in the image coordinates
 # Write down the formula for calculating the distortion model first (see exercise above)
