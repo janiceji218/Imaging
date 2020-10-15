@@ -1,1 +1,1 @@
-pip3 install notebook Pillow numpy nbconvert matplotlib
+pip3 install notebook Pillow numpy nbconvert matplotlib tifffile
