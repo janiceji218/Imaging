@@ -16,9 +16,10 @@ import tifffile
 # Output:
 #   The corrected image: black level subtracted, then color channels scale to make gray come out gray
 def white_balance(I, black_level, gray):
-
     # A3TODO: Complete this function
-    return I # Replace this with your implementation
+    new_gray = gray - black_level
+    balance = (I - [[black_level]]) * [[new_gray[1] / new_gray]]
+    return (balance / (2**16 - 1)).astype(np.float32) # Replace this with your implementation
 
 
 # ======================= color_transform =======================
@@ -30,6 +31,7 @@ def white_balance(I, black_level, gray):
 def color_transform(I, M):
     
     # A3TODO: Complete this function
+    transformed = np.tensordot(I, M, axes=(2, 1))
     return I # Replace this with your implementation
 
 
@@ -46,7 +48,15 @@ def color_transform(I, M):
 #  For points that fall out of range on the right side, repeat the rightmost pixel. 
 def shift_image_to_left(img, k):
     new_img = np.zeros(img.shape, np.uint8)
-    # A3TODO: Complete this function
+    length = img.shape[1]
+    height = img.shape[0]
+    
+    for i in range(0, height):
+        for j in range(0, length):
+            if (j+k < length):
+                new_img[i][j] = img[i][j+k]
+            else:
+                new_img[i][j] = img[i][length-1]
 
     return new_img
 
@@ -58,20 +68,67 @@ def shift_image_to_left(img, k):
 #   interp_mode: 0 for nearest neighbor, 1 for bilinear
 # Output:
 #   A 2D array of img rotated around the original image's center by k degrees
-def rotate_image(img, k, interp_mode=0):
+def rotate_image(img, k, interp_mode):
     new_img = np.zeros(img.shape, np.uint8)
     # A3TODO: Complete this function
-            
-    if interp_mode == 0:
-        # nearest neighbor
+    center_x = img.shape[1] // 2
+    center_y = img.shape[0] // 2
+
+    length = img.shape[1]
+    height = img.shape[0]
+    rad = np.radians(k)
+        
+    if (interp_mode == 0): 
+        #nearest neighbor
+        for i in range(0, height):
+            for j in range(0, length):
+                row = round(((j - center_x) * np.cos(rad)) - ((i - center_y) * np.sin(rad)) + center_x)
+                col = round(((j - center_x) * np.sin(rad)) + ((i - center_y) * np.cos(rad)) + center_y)
+                if (row < length and row >= 0 and col < height and col >= 0):
+                    new_img[i][j] = img[col][row]
 
 
-    else:
-        # bilinear
+        return new_img 
 
+    else: 
+        #bilinear interpolation
+        for i in range(0, height):
+            for j in range(0, length):
+                row = ((j - center_x) * np.cos(rad)) - ((i - center_y) * np.sin(rad)) + center_x
+                col = ((j - center_x) * np.sin(rad)) + ((i - center_y) * np.cos(rad)) + center_y
+                a = col - np.floor(col)
+                b = row - np.floor(row)
+                col0 = np.floor(col).astype(np.int)
+                row0 = np.floor(row).astype(np.int)
+                col1 = np.ceil(col).astype(np.int)
+                row1 = np.ceil(row).astype(np.int)
+                #q00
+                if (col0 >= 0 and col0 <= height - 1 and row0 >= 0 and row0 <= length - 1):
+                    q00 = img[col0][row0]
+                else:
+                    q00 = 0
+                
+                #q01
+                if(col1 >= 0 and col1 <= height - 1 and row0 >= 0 and row0 <= length - 1):
+                    q01 = img[col1][row0]
+                else:
+                    q01 = 0
+                    
+                #q10
+                if(col0 >= 0 and col0 <= height - 1 and row1 >= 0 and row1 <= length - 1):
+                    q10 = img[col0][row1]
+                else:
+                    q10 = 0
+                    
+                #q11
+                if(col1 >= 0 and col1 <= height - 1 and row1 >= 0 and row1 <= length - 1):
+                    q11 = img[col1][row1]
+                else:
+                    q11 = 0
+                    
+                new_img[i][j] = ((1 - a) * (1 - b) * q00) + ((1 - a) * b * q10) + (a * (1 - b) * q01) + (a * b * q11)
 
-
-    return new_img 
+        return new_img 
 
 
 # ======================= undistort_image =======================
@@ -84,20 +141,67 @@ def rotate_image(img, k, interp_mode=0):
 #   An undistorted image, with pixels in the image coordinates
 # Write down the formula for calculating the distortion model first (see exercise above)
 # Put black in for points that fall out of bounds
-def undistort_image(img, k1, k2, M, interp_mode=0):
+def undistort_image(img, k1, k2, M, interp_mode):
+    
     Mi = np.linalg.inv(M)
     output = np.zeros_like(img)
     # A3TODO: Complete this function
-    h, w = img.shape[:2]
-    
-    if interp_mode == 0:
-        # nearest neighbor
+    length = output.shape[1]
+    height = output.shape[0]
+    for i in range(0, height):
+        for j in range(0, length):
+            dist_coord = Mi @ np.array([j, i, 1])
+            dist_i = dist_coord[1]
+            dist_j = dist_coord[0]
+            r = np.sqrt(dist_i ** 2 + dist_j ** 2)
+            sr = 1 + k1 * (r ** 2) + k2 * (r ** 4)
+            dist_x_coord = sr * dist_j
+            dist_y_coord = sr * dist_i
+            new_img_xy = M @ np.array([dist_x_coord, dist_y_coord, 1])
+            
+            if(interp_mode == 0): 
+                #nearest_neighbor
+                new_img_x = round(new_img_xy[0])
+                new_img_y = round(new_img_xy[1])
+                if (new_img_x < length and new_img_x >= 0 and new_img_y < height and new_img_y >= 0):
+                    output[i][j] = img[new_img_y][new_img_x]
 
+            else:
+                #binary interpolation version of undistort_image
+                row = new_img_xy[0]
+                col = new_img_xy[1]
+                a = col - np.floor(col)
+                b = row - np.floor(row)
+                col0 = np.floor(col).astype(np.int)
+                row0 = np.floor(row).astype(np.int)
+                col1 = np.ceil(col).astype(np.int)
+                row1 = np.ceil(row).astype(np.int)
+                #q00
+                if (col0 >= 0 and col0 <= height - 1 and row0 >= 0 and row0 <= length - 1):
+                    q00 = img[col0][row0]
+                else:
+                    q00 = 0
+                
+                #q01
+                if(col1 >= 0 and col1 <= height - 1 and row0 >= 0 and row0 <= length - 1):
+                    q01 = img[col1][row0]
+                else:
+                    q01 = 0
+                    
+                #q10
+                if(col0 >= 0 and col0 <= height - 1 and row1 >= 0 and row1 <= length - 1):
+                    q10 = img[col0][row1]
+                else:
+                    q10 = 0
+                    
+                #q11
+                if(col1 >= 0 and col1 <= height - 1 and row1 >= 0 and row1 <= length - 1):
+                    q11 = img[col1][row1]
+                else:
+                    q11 = 0
+                    
+                output[i][j] = ((a - 1) * (b - 1) * q00) + ((1 - a) * b * q10) + (a * (1 - b) * q01) + (a * b * q11)
         
-    else:
-        # bilinear
-
-
     return output
 
 
@@ -114,8 +218,15 @@ def undistort_image(img, k1, k2, M, interp_mode=0):
 #   (Note that the array should be normalized)
 # Hint: Use linspace or mgrid from numpy
 def gen_gaussian_filter(dim, sigma):
-    # A3 implement
-    pass # Replace this line with your implementation
+    # A3TODO: Complete this function
+    center = dim // 2
+    
+    f = np.zeros([dim, dim])
+    for i in range(0, dim):
+        for j in range(0, dim):
+            f[i,j] = np.exp(-((i-center)**2 + (j-center)**2)/(2* sigma**2)) / (2 * np.pi * sigma**2)
+    
+    return f
 
 
 # ======================= convolve =======================
@@ -132,11 +243,24 @@ def gen_gaussian_filter(dim, sigma):
 #           sweep through [i-r+1, i+r] (i.e. length of left half = length of right half - 1)
 #           With odd # of dimensions (2r+1), you would sweep through [i-r, i+r].
 def convolve(I, f):
-    output = np.zeros_like(I)
+    output = np.zeros_like(I).astype(np.float64)
+    image_height = I.shape[0]
+    image_length = I.shape[1]
+    f_height = f.shape[0]
+    f_length = f.shape[1]
     
-    # A3TODO: Complete this function
-
-    return output
+    for p in range(0, image_length):
+        for q in range(0, image_height):
+            
+                s = 0.0
+                for i in range(0, f_height):
+                    for j in range(0, f_length):
+                        if ((q - f_height // 2 + i) < image_height and (q - f_height // 2 + i) >= 0 
+                            and (p - f_length // 2 + j) >= 0 and (p - f_length // 2 + j) < image_length):
+                            s = s + f[i][j] * I[q - f_height // 2 + i][p - f_length // 2 + j]
+                output[q][p] = s
+            
+    return np.clip(output, 0, 255).astype(np.uint8)
 
 
 # ======================= convolve_sep =======================
@@ -155,10 +279,37 @@ def convolve(I, f):
 #       You will convolve with respect to the direction corresponding to I.shape[0] first, then I.shape[1]
 def convolve_sep(I, f):
     output = np.zeros_like(I)
-        
-    # A3TODO: Complete this function
-
-    return output
+    image_height = I.shape[0]
+    image_length = I.shape[1]
+    f_height = f.shape[0]
+    f_length = f.shape[1]
+    
+    ctr_row = f.shape[0] // 2
+    ctr_col = f.shape[1] // 2
+    
+    f_along_row = f[:][ctr_row-1] / np.sum(f[:][ctr_row-1])
+    f_along_col = f[ctr_col-1][:] / np.sum(f[ctr_col-1][:])
+    
+    temp = np.zeros_like(I)
+    for p in range(0, image_length):
+        for q in range(0, image_height):
+            
+            s = 0.0
+            for i in range(0, f_height):
+                if ((q - f_height // 2 + i) < image_height and (q - f_height // 2 + i) >= 0):
+                    s = s + f_along_row[i] * I[q - f_height // 2 + i][p]
+            temp[q][p] = np.clip(s, 0, 255).astype(np.uint8)
+    
+    for x in range(0, image_length):
+        for y in range(0, image_height):
+            
+            t = 0.0
+            for j in range(0, f_length):
+                if ((x - f_length // 2 + j) >= 0 and (x - f_length // 2 + j) < image_length):
+                    t = t + f_along_col[j] * temp[y][x - f_length // 2 + j]
+            output[y][x] = np.clip(t, 0, 255).astype(np.uint8)
+    
+    return np.clip(output, 0, 255).astype(np.uint8)
 
 
 # ======================= unsharp_mask =======================
@@ -170,7 +321,11 @@ def convolve_sep(I, f):
 # Output:
 #   A sharpened version of I
 def unsharp_mask(I, sigma, w):
-    output = np.zeros_like(I)
     # A3TODO: Complete this function
+    output = np.zeros_like(I)
+    r = np.ceil(3 * sigma).astype(np.int)
+    gaussian_blur = gen_gaussian_filter(2*r, sigma)
+    blurred = convolve_sep(I, gaussian_blur)
+    output = np.clip((1 + w) * I - w * blurred, 0, 255)
 
-    return output
+    return output.astype(np.uint8)
